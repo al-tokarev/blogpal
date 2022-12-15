@@ -1,39 +1,45 @@
 <?php
 
-$textStorage = [];
+date_default_timezone_set('Europe/Moscow');
 
-function add(array &$textStorage, string $title, string $text): void {
-    $new_post = ["title" => $title, "text" => $text];
-    $textStorage[] = $new_post;
-}
+class TelegraphText {
+    public $title, $text, $author, $published, $slug;
 
-function remove(array &$textStorage, int $id_post): bool {
-    if (isset($textStorage[$id_post])) {
-        unset($textStorage[$id_post]);
-        return true;
-    } else {
-        return false;
+    public function __construct(string $author, string $slug)
+    {
+        $this->author = $author;
+        $this->slug = $slug;
+        $this->published = date('Y-m-d H:i:s');
+    }
+
+    public function storeText(): void
+    {
+        $article = ['text'=>$this->text, 'title'=>$this->title, 'author'=>$this->author, 'published'=>$this->published];
+        file_put_contents($this->slug, serialize($article));
+    }
+
+    public function loadText()
+    {
+        if (file_exists($this->slug)) {
+            $article_array = unserialize(file_get_contents($this->slug));
+
+            $this->title = $article_array['title'];
+            $this->text = $article_array['text'];
+            $this->author = $article_array['author'];
+            $this->published = $article_array['published'];
+
+            return $this->text;
+        } else echo 'Запрашиваемого файла не существует';
+    }
+
+    public function editText(string $title, string $text)
+    {
+        $this->title = $title;
+        $this->text = $text;
     }
 }
 
-function edit(int $id_post, string $title, string $text, array &$textStorage): bool {
-    if (isset($textStorage[$id_post])) {
-        $textStorage[$id_post]['title'] = $title;
-        $textStorage[$id_post]['text'] = $text;
-        return true;
-    } else {
-        return false;
-    }
-}
-
-add($textStorage, "Новая запись", "Текст новой записи");
-add($textStorage, "Новая запись2", "Текст новой записи2");
-
-echo remove($textStorage, 0);
-echo remove($textStorage, 5) . PHP_EOL;
-
-echo edit(1, "Измененный заголовок", "Измененный текст", $textStorage) . PHP_EOL;
-
-print_r($textStorage);
-
-echo edit(5, "Измененный заголовок", "Измененный текст", $textStorage) . PHP_EOL;
+$article = new TelegraphText('Alexandr', 'test_text_file.txt');
+$article->editText('Title article','Text article');
+$article->storeText();
+echo $article->loadText();
